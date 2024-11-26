@@ -157,7 +157,7 @@ class RammbockCore(object):
         for server in self._servers:
             server.empty()
 
-    def new_protocol(self, protocol_name):
+    def new_protocol(self, protocol_name, little_endian=False):
         """Start defining a new protocol template.
 
         All messages sent and received from a connection that uses a protocol
@@ -167,7 +167,7 @@ class RammbockCore(object):
             raise Exception('Can not start a new protocol definition in middle of old.')
         if protocol_name in self._protocols:
             raise Exception('Protocol %s already defined' % protocol_name)
-        self._init_new_message_stack(Protocol(protocol_name, library=self))
+        self._init_new_message_stack(Protocol(protocol_name, little_endian, library=self))
         self._protocol_in_progress = True
 
     def end_protocol(self):
