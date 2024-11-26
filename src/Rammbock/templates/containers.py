@@ -192,8 +192,8 @@ class Protocol(_Template):
             pdu_bytes = stream.read(length)
         return header, pdu_bytes
 
-    def get_message_stream(self, buffered_stream):
-        return MessageStream(buffered_stream, self)
+    def get_message_stream(self, buffered_stream, lock):
+        return MessageStream(buffered_stream, self, lock)
 
 
 class MessageTemplate(_Template):

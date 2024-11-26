@@ -18,6 +18,7 @@ import time
 from .logger import logger
 from .synchronization import SynchronizedType
 from .binary_tools import to_hex
+import threading
 
 try:
     from sctp import sctpsocket_tcp
@@ -59,6 +60,9 @@ class _NetworkNode(_WithTimeouts):
     parent = None
     name = '<not set>'
 
+    def __init__(self):
+        self._lock = threading.RLock()
+
     def set_handler(self, msg_template, handler_func, header_filter, alias=None, interval=None):
         if alias:
             raise AssertionError('Named connections not supported.')
@@ -84,7 +88,7 @@ class _NetworkNode(_WithTimeouts):
     def _get_message_stream(self):
         if not self._protocol:
             return None
-        return self._protocol.get_message_stream(BufferedStream(self, self._default_timeout))
+        return self._protocol.get_message_stream(BufferedStream(self, self._default_timeout), self._lock)
 
     def get_message(self, message_template, timeout=None, header_filter=None, latest=None):
         if not self._protocol:
@@ -293,12 +297,12 @@ class StreamServer(_Server):
 class _TCPConnection(_NetworkNode, _TCPNode):
 
     def __init__(self, parent, socket, protocol=None):
+        _NetworkNode.__init__(self)
         self.parent = parent
         self._socket = socket
         self._protocol = protocol
         self._message_stream = self._get_message_stream()
         self._is_connected = True
-        _NetworkNode.__init__(self)
 
 
 class SCTPServer(StreamServer, _SCTPNode):
@@ -312,12 +316,12 @@ class TCPServer(StreamServer, _TCPNode):
 class _Client(_NetworkNode):
 
     def __init__(self, timeout=None, protocol=None, family=None):
+        _NetworkNode.__init__(self)
         self._is_connected = False
         self._init_socket(family)
         self._set_default_timeout(timeout)
         self._protocol = protocol
         self._message_stream = None
-        _NetworkNode.__init__(self)
 
     def set_own_ip_and_port(self, ip=None, port=None):
         if ip and port:

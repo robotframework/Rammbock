@@ -1,16 +1,11 @@
-import threading
-
 from .decorator import decorator
 
 
-LOCK = threading.RLock()
-
-
 @decorator
-def synchronized(f, *args, **kw):
+def synchronized(f, node, *args, **kw):
     """ Synchronization decorator """
-    with LOCK:
-        return f(*args, **kw)
+    with node._lock:
+        return f(node, *args, **kw)
 
 
 class SynchronizedType(type):

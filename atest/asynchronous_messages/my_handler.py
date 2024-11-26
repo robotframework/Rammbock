@@ -1,9 +1,9 @@
 from Rammbock import logger
+import sys
 
 
 RECEIVED_MESSAGES = []
-SERVER_SENT = {'sample': 0,
-               'another': 0}
+SERVER_SENT = {'sample': 0, 'another': 0}
 
 
 def handle_sample(rammbock, msg):
@@ -16,27 +16,19 @@ def reset_received_messages():
 
 
 def respond_to_sample(rammbock, msg, client):
+    RECEIVED_MESSAGES.append(msg)
     foo = "adding Extra Variable to replicate ArgCount bug"
     bar = "adding Extra Variable to replicate ArgCount bug"
-    RECEIVED_MESSAGES.append(msg)
-    rammbock.save_template("__backup_template")
-    try:
-        rammbock.load_template("sample response")
-        rammbock.client_sends_message('name=%s' % client.name)
-    finally:
-        rammbock.load_template("__backup_template")
+    message_template = rammbock.get_message_template('sample response')
+    rammbock.client_sends_given_message(message_template, client.name)
 
 
 def server_respond_to_another_max_100(rammbock, msg, server, connection):
     RECEIVED_MESSAGES.append(msg)
     if SERVER_SENT['another'] < 100:
         SERVER_SENT['another'] = SERVER_SENT['another'] + 1
-        rammbock.save_template("__backup_template")
-        try:
-            rammbock.load_template("another")
-            rammbock.server_sends_message('name=%s' % server.name, 'connection=%s' % connection.name)
-        finally:
-            rammbock.load_template("__backup_template")
+        message_template = rammbock.get_message_template('another')
+        rammbock.server_sends_given_message(message_template, server.name, connection.name)
     else:
         logger.warn("Reached 100 in another")
 
@@ -45,12 +37,8 @@ def server_respond_to_sample_response_max_100(rammbock, msg):
     RECEIVED_MESSAGES.append(msg)
     if SERVER_SENT['sample'] < 100:
         SERVER_SENT['sample'] = SERVER_SENT['sample'] + 1
-        rammbock.save_template("__backup_template")
-        try:
-            rammbock.load_template("sample")
-            rammbock.server_sends_message()
-        finally:
-            rammbock.load_template("__backup_template")
+        message_template = rammbock.get_message_template('sample')
+        rammbock.server_sends_given_message(message_template)
     else:
         logger.warn("Reached 100 in sample")
 

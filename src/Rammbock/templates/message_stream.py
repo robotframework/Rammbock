@@ -18,12 +18,11 @@ import re
 
 from Rammbock.logger import logger
 from Rammbock.binary_tools import to_bin, to_int
-from Rammbock.synchronization import LOCK
 
 
 class MessageStream(object):
 
-    def __init__(self, stream, protocol):
+    def __init__(self, stream, protocol, lock):
         self._cache = []
         self._stream = stream
         self._protocol = protocol
@@ -31,6 +30,7 @@ class MessageStream(object):
         self._handler_thread = None
         self._running = True
         self._interval = 0.5
+        self._lock = lock
 
     def close(self):
         self._running = False
@@ -56,7 +56,7 @@ class MessageStream(object):
             return msg
         cutoff = time.time() + float(timeout if timeout else 0)
         while not timeout or time.time() < cutoff:
-            with LOCK:
+            with self._lock:
                 header, pdu_bytes = self._protocol.read(self._stream, timeout=timeout)
                 if self._matches(header, header_fields, header_filter):
                     return self._to_msg(message_template, header, pdu_bytes)
@@ -140,7 +140,7 @@ class MessageStream(object):
     def match_handlers(self):
         try:
             while True:
-                with LOCK:
+                with self._lock:
                     self._try_matching_cached_to_templates()
                     header, pdu_bytes = self._protocol.read(self._stream, timeout=0.01)
                     self._match_or_cache(header, pdu_bytes)

@@ -150,15 +150,6 @@ class TestNetworking(_NetworkingTests):
         self._assert_timeout(server)
 
     @contextmanager
-    def _without_sync(self):
-        original_LOCK = synchronization.LOCK
-        try:
-            synchronization.LOCK = Semaphore(100)
-            yield
-        finally:
-            synchronization.LOCK = original_LOCK
-
-    @contextmanager
     def _client_and_server(self, port):
         server = TCPServer(LOCAL_IP, port)
         client = TCPClient()
@@ -169,19 +160,17 @@ class TestNetworking(_NetworkingTests):
             client.close()
 
     def test_connection_timeout(self):
-        with self._without_sync():
-            with self._client_and_server(ports['SERVER_PORT']) as (client, server):
-                timer_obj = Timer(0.1, client.connect_to, [LOCAL_IP, ports['SERVER_PORT']])
-                timer_obj.start()
-                server.accept_connection(timeout="0.5")
+        with self._client_and_server(ports['SERVER_PORT']) as (client, server):
+            timer_obj = Timer(0.1, client.connect_to, [LOCAL_IP, ports['SERVER_PORT']])
+            timer_obj.start()
+            server.accept_connection(timeout="0.5")
 
     def test_connection_timeout_failure(self):
-        with self._without_sync():
-            with self._client_and_server(ports['SERVER_PORT']) as (client, server):
-                timer_obj = Timer(0.2, client.connect_to, [LOCAL_IP, ports['SERVER_PORT']])
-                timer_obj.start()
-                self.assertRaises(socket.timeout, server.accept_connection, timeout=0.1)
-                timer_obj.cancel()
+        with self._client_and_server(ports['SERVER_PORT']) as (client, server):
+            timer_obj = Timer(0.2, client.connect_to, [LOCAL_IP, ports['SERVER_PORT']])
+            timer_obj.start()
+            self.assertRaises(socket.timeout, server.accept_connection, timeout=0.1)
+            timer_obj.cancel()
 
     # FIXME: this deadlocks
     def xtest_blocking_timeout(self):

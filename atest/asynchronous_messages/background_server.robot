@@ -8,6 +8,7 @@ Force tags   background
 *** Variables ***
 ${BACKGROUND}=    ${False}
 ${PORT}=          44455
+${PORT2}=         44488
 
 *** Test Cases ***
 Serve on background
@@ -19,7 +20,9 @@ Loop on background
 Send 10 messages every 0.5 seconds
     Run keyword if   ${BACKGROUND}     Send 10 messages every 0.5 seconds
     ...              ELSE              Set test documentation    Skipped because not run on background.
-
+Send 10 messages every 0.5 seconds using given connection
+    Run keyword if   ${BACKGROUND}     Send 10 messages every 0.5 seconds using given connection
+    ...              ELSE              Set test documentation    Skipped because not run on background.
 *** Keywords ***
 Serve on loop
     Setup connection
@@ -35,7 +38,7 @@ Serve
     Receive   another
     Send sample receive sample
     Send  another
-    Sleep    5
+    Sleep    10
 
 Send 10 messages every 0.5 seconds
     Setup connection
@@ -43,16 +46,16 @@ Send 10 messages every 0.5 seconds
     \   Send sample receive sample
     \   Sleep   0.5
 
-Send sample receive sample
-    Send   sample
-    Receive  sample response
-
 Setup connection
     Define example protocol
     Define Templates
     Start TCP server    127.0.0.1    ${PORT}    name=ExampleServer    protocol=Example
     Touch    ${SIGNAL FILE}
     Accept connection
+
+Send sample receive sample
+    Send   sample
+    Receive  sample response
 
 Send   [arguments]    ${message}
     Load template    ${message}
@@ -62,4 +65,51 @@ Receive   [arguments]    ${message}
     Load template    ${message}
     Server receives message     header_filter=messageType
 
+Setup connection with two clients
+    Define example protocol
+    Define Templates
+    Start TCP server    127.0.0.1    ${PORT2}    name=ExampleServer    protocol=Example
+    Touch    ${SIGNAL FILE}
+    Accept connection    alias=Connection1
+    Accept connection    alias=Connection2
 
+Send 10 messages every 0.5 seconds using given connection
+    Setup connection with two clients
+    load template  sample response
+    server sends message   connection=Connection2
+    :FOR  ${i}  IN RANGE  10
+    \   Send sample and receive sample using connection1
+    \   Sleep   0.01
+    load template  sample response
+    server sends message   connection=Connection1
+    :FOR  ${i}  IN RANGE  10
+    \   Send sample and receive sample using connection2
+    \   Sleep   0.01
+    load template  sample response
+    server sends message   connection=Connection2
+    :FOR  ${i}  IN RANGE  10
+    \   Send sample and receive sample using connection2
+    \   Sleep   0.01
+    load template  sample response
+    server sends message   connection=Connection1
+    :FOR  ${i}  IN RANGE  10
+    \   Send sample and receive sample using connection1
+    \   Sleep   0.01
+    load template  sample response
+    server sends message   connection=Connection2
+
+Send sample and receive sample using connection1
+    Send message using given connection   sample    Connection1
+    Receive message using given connection  sample response    Connection1
+
+Send sample and receive sample using connection2
+    Send message using given connection   sample    Connection2
+    Receive message using given connection  sample response    Connection2
+
+Send message using given connection  [arguments]    ${message}   ${connection}
+    ${data}=    get message template    ${message}
+    Server sends given message    ${data}    connection=${connection}
+
+Receive message using given connection   [arguments]    ${message}   ${connection}
+    ${data}=    get message template    ${message}
+    Server receives given message    ${data}    alias=${connection}    header_filter=messageType

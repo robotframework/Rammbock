@@ -4,6 +4,7 @@ import socket
 from Rammbock.templates.message_stream import MessageStream
 from Rammbock.templates import Protocol, MessageTemplate, UInt, PDU
 from Rammbock.binary_tools import to_bin
+import threading
 
 
 class TestProtocolMessageReceiving(TestCase):
@@ -32,7 +33,7 @@ class TestMessageStream(TestCase):
         self._msg.add(UInt(1, 'field_1', None))
         self._msg.add(UInt(1, 'field_2', None))
         byte_stream = MockStream(to_bin('0xff0004cafe aa0004dead dd0004beef'))
-        self._msg_stream = MessageStream(byte_stream, self._protocol)
+        self._msg_stream = MessageStream(byte_stream, self._protocol, threading.RLock())
 
     def test_get_message(self):
         msg = self._msg_stream.get(self._msg, header_filter='id')

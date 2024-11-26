@@ -4,6 +4,7 @@ from Rammbock.templates.primitives import UInt, PDU
 from Rammbock.binary_tools import to_bin
 from .tools import *
 from Rammbock.templates.message_stream import MessageStream
+import threading
 
 
 class TestLittleEndian(TestCase):
@@ -51,7 +52,7 @@ class TestLittleEndianProtocol(TestCase):
 
     def test_decode_little_endian_header(self):
         byte_stream = MockStream(to_bin('0x0500 0800 cafe babe'))
-        self._msg_stream = MessageStream(byte_stream, self._protocol)
+        self._msg_stream = MessageStream(byte_stream, self._protocol, threading.RLock())
         decoded = self._msg_stream.get(self.tmp)
         self.assertEquals(decoded._header.msgId.hex, '0x0005')
         self.assertEquals(decoded._header.msgId._raw, to_bin('0x0500'))
